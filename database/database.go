@@ -61,3 +61,9 @@ func (d *Database) GetBooks() ([]Book, error) {
 	}
 	return books, nil
 }
+
+func (d *Database) AddBook(book Book) error {
+	_, err := d.db.Exec("INSERT INTO books(title, author, rating) values($1, $2, $3)", 
+		book.Title, book.Author, book.Rating)
+	return err
+}

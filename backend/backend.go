@@ -3,6 +3,7 @@ package backend
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -22,11 +23,22 @@ func NewBackend(dsn, port string) (*Backend, error) {
 }
 
 func (b *Backend) Run() {
-	http.HandleFunc("/books/", b.getBookByID)
-	http.HandleFunc("/books", b.getBooks)
+	http.HandleFunc("/books", b.handleBooks)
 
 	if err := http.ListenAndServe(b.port, nil); err != nil {
 		log.Fatal(err)
+	}
+}
+
+func (b *Backend) handleBooks(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		if len(strings.TrimPrefix(r.URL.Path, "/books")) > 1 {
+			b.getBookByID(w, r)
+		}
+		b.getBooks(w, r)
+	case http.MethodPost:
+		b.addBook(w, r)
 	}
 }
 
@@ -73,6 +85,29 @@ func (b *Backend) getBooks(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write(resp)
+}
+
+func (b *Backend) addBook(w http.ResponseWriter, r *http.Request) {
+	reqBytes, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(errorMsg(err))
+		return
+	}
+
+	var book database.Book
+	if err = json.Unmarshal(reqBytes, &book); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(errorMsg(err))
+		return
+	}
+
+	if err = b.db.AddBook(book); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(errorMsg(err))
+		return
+	}
+	w.WriteHeader(http.StatusCreated)
 }
 
 func errorMsg(err error) []byte {
