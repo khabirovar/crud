@@ -22,14 +22,15 @@ func NewBackend(dsn, port string) (*Backend, error) {
 }
 
 func (b *Backend) Run() {
-	http.HandleFunc("/books/", b.getBook)
+	http.HandleFunc("/books/", b.getBookByID)
+	http.HandleFunc("/books", b.getBooks)
 
 	if err := http.ListenAndServe(b.port, nil); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func (b *Backend) getBook(w http.ResponseWriter, r *http.Request) {
+func (b *Backend) getBookByID(w http.ResponseWriter, r *http.Request) {
 	idStr := strings.TrimPrefix(r.URL.Path, "/books/")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -52,6 +53,24 @@ func (b *Backend) getBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.WriteHeader(http.StatusOK)
+	w.Write(resp)
+}
+
+func (b *Backend) getBooks(w http.ResponseWriter, r *http.Request) {
+	books, err := b.db.GetBooks()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(errorMsg(err))
+		return
+	}
+
+	resp, err := json.Marshal(books)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(errorMsg(err))
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 	w.Write(resp)
 }

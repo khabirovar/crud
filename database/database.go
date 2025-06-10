@@ -36,3 +36,28 @@ func (d *Database) GetBookByID(id int) (*Book, error) {
 	}
 	return &book, nil
 }
+
+func (d *Database) GetBooks() ([]Book, error) {
+	rows, err := d.db.Query("SELECT * FROM books")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	books := make([]Book, 0)
+
+	for rows.Next() {
+		book := Book{}
+		err := rows.Scan(&book.ID, &book.Title, &book.Author, &book.PublishDate, &book.Rating)
+		if err != nil {
+			return nil, err
+		}
+
+		books = append(books, book)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+	return books, nil
+}
