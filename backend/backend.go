@@ -165,6 +165,8 @@ func (b *Backend) deleteBook(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
+
+// TODO transform to msg func with application json header and code 
 func errorMsg(err error) []byte {
 	return []byte(fmt.Sprintf("{\"error\": \"%v\"", err))
 }
