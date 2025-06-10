@@ -25,6 +25,7 @@ func NewBackend(dsn, port string) (*Backend, error) {
 
 func (b *Backend) Run() {
 	http.HandleFunc("/books", b.handleBooks)
+	http.HandleFunc("/books/", b.handleBooks)
 
 	if err := http.ListenAndServe(b.port, nil); err != nil {
 		log.Fatal(err)
@@ -32,6 +33,7 @@ func (b *Backend) Run() {
 }
 
 func (b *Backend) handleBooks(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("METHOD: %v", r.Method)
 	switch r.Method {
 	case http.MethodGet:
 		if len(strings.TrimPrefix(r.URL.Path, "/books")) > 1 {
@@ -165,8 +167,7 @@ func (b *Backend) deleteBook(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
-
-// TODO transform to msg func with application json header and code 
+// TODO transform to msg func with application json header and code
 func errorMsg(err error) []byte {
 	return []byte(fmt.Sprintf("{\"error\": \"%v\"", err))
 }
