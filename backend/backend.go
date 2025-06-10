@@ -42,6 +42,8 @@ func (b *Backend) handleBooks(w http.ResponseWriter, r *http.Request) {
 		b.addBook(w, r)
 	case http.MethodPatch:
 		b.updateBook(w, r)
+	case http.MethodDelete:
+		b.deleteBook(w, r)
 	}
 }
 
@@ -136,6 +138,27 @@ func (b *Backend) updateBook(w http.ResponseWriter, r *http.Request) {
 	err = b.db.UpdateBookByID(book)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(errorMsg(err))
+		return
+	}
+	w.WriteHeader(http.StatusAccepted)
+}
+
+func (b *Backend) deleteBook(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("HIER")
+	idStr := strings.TrimPrefix(r.URL.Path, "/books/")
+	fmt.Printf("id %s", idStr)
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(errorMsg(err))
+		return
+	}
+	fmt.Printf("id = %d\n", id)
+
+	err = b.db.DeleteBookByID(id)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		w.Write(errorMsg(err))
 		return
 	}

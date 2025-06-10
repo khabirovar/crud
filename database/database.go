@@ -63,7 +63,7 @@ func (d *Database) GetBooks() ([]Book, error) {
 }
 
 func (d *Database) AddBook(book Book) error {
-	_, err := d.db.Exec("INSERT INTO books(title, author, rating) values($1, $2, $3)", 
+	_, err := d.db.Exec("INSERT INTO books(title, author, rating) values($1, $2, $3)",
 		book.Title, book.Author, book.Rating)
 	return err
 }
@@ -71,5 +71,10 @@ func (d *Database) AddBook(book Book) error {
 func (d *Database) UpdateBookByID(book Book) error {
 	_, err := d.db.Exec("UPDATE books SET title=$1, author=$2, rating=$3 WHERE id = $4",
 		book.Title, book.Author, book.Rating, book.ID)
+	return err
+}
+
+func (d *Database) DeleteBookByID(id int) error {
+	_, err := d.db.Exec("DELETE FROM books WHERE id = $1", id)
 	return err
 }
