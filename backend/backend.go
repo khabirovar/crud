@@ -2,6 +2,7 @@ package backend
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -39,6 +40,8 @@ func (b *Backend) handleBooks(w http.ResponseWriter, r *http.Request) {
 		b.getBooks(w, r)
 	case http.MethodPost:
 		b.addBook(w, r)
+	case http.MethodPatch:
+		b.updateBook(w, r)
 	}
 }
 
@@ -108,6 +111,35 @@ func (b *Backend) addBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
+}
+
+func (b *Backend) updateBook(w http.ResponseWriter, r *http.Request) {
+	reqBytes, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(errorMsg(err))
+		return
+	}
+
+	var book database.Book
+	if err = json.Unmarshal(reqBytes, &book); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(errorMsg(err))
+		return
+	}
+	if book.ID == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(errorMsg(errors.New("id must be specified")))
+		return
+	}
+
+	err = b.db.UpdateBookByID(book)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(errorMsg(err))
+		return
+	}
+	w.WriteHeader(http.StatusAccepted)
 }
 
 func errorMsg(err error) []byte {

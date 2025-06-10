@@ -67,3 +67,9 @@ func (d *Database) AddBook(book Book) error {
 		book.Title, book.Author, book.Rating)
 	return err
 }
+
+func (d *Database) UpdateBookByID(book Book) error {
+	_, err := d.db.Exec("UPDATE books SET title=$1, author=$2, rating=$3 WHERE id = $4",
+		book.Title, book.Author, book.Rating, book.ID)
+	return err
+}
