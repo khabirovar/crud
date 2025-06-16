@@ -2,7 +2,6 @@ package backend
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -53,97 +52,88 @@ func (b *Backend) getBookByID(w http.ResponseWriter, r *http.Request) {
 	idStr := strings.TrimPrefix(r.URL.Path, "/books/")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(errorMsg(err))
+		errorMsg(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	book, err := b.db.GetBookByID(id)
 	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write(errorMsg(err))
+		errorMsg(w, http.StatusNotFound, err.Error())
 		return
 	}
 
 	resp, err := json.Marshal(book)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(errorMsg(err))
+		errorMsg(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Write(resp)
+	jsonMsg(w, http.StatusOK, resp)
 }
 
 func (b *Backend) getBooks(w http.ResponseWriter, r *http.Request) {
 	books, err := b.db.GetBooks()
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(errorMsg(err))
+		errorMsg(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	resp, err := json.Marshal(books)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(errorMsg(err))
+		errorMsg(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	w.WriteHeader(http.StatusOK)
-	w.Write(resp)
+
+	jsonMsg(w, http.StatusOK, resp)
 }
 
 func (b *Backend) addBook(w http.ResponseWriter, r *http.Request) {
 	reqBytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(errorMsg(err))
+		errorMsg(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	var book database.Book
 	if err = json.Unmarshal(reqBytes, &book); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(errorMsg(err))
+		errorMsg(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	if err = b.db.AddBook(book); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(errorMsg(err))
+		errorMsg(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	w.WriteHeader(http.StatusCreated)
+
+	resp := []byte(fmt.Sprintf("%v", map[string]string{"status": "created"}))
+	jsonMsg(w, http.StatusCreated, resp)
 }
 
 func (b *Backend) updateBook(w http.ResponseWriter, r *http.Request) {
 	reqBytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(errorMsg(err))
+		errorMsg(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	var book database.Book
 	if err = json.Unmarshal(reqBytes, &book); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(errorMsg(err))
+		errorMsg(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if book.ID == 0 {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(errorMsg(errors.New("id must be specified")))
+		errorMsg(w, http.StatusBadRequest, "id must be specified")
 		return
 	}
 
 	err = b.db.UpdateBookByID(book)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(errorMsg(err))
+		errorMsg(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	w.WriteHeader(http.StatusAccepted)
+
+	resp := []byte(fmt.Sprintf("%v", map[string]string{"status": "accepted"}))
+	jsonMsg(w, http.StatusAccepted, resp)
 }
 
 func (b *Backend) deleteBook(w http.ResponseWriter, r *http.Request) {
@@ -152,22 +142,32 @@ func (b *Backend) deleteBook(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("id %s", idStr)
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(errorMsg(err))
+		errorMsg(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	fmt.Printf("id = %d\n", id)
 
 	err = b.db.DeleteBookByID(id)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(errorMsg(err))
+		errorMsg(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	w.WriteHeader(http.StatusAccepted)
+
+	resp := []byte(fmt.Sprintf("%v", map[string]string{"status": "accepted"}))
+	jsonMsg(w, http.StatusOK, resp)
 }
 
-// TODO transform to msg func with application json header and code
-func errorMsg(err error) []byte {
-	return []byte(fmt.Sprintf("{\"error\": \"%v\"", err))
+// Helper functions
+func errorMsg(w http.ResponseWriter, code int, message string) {
+	payload := map[string]string{"error": message}
+	response, _ := json.Marshal(payload)
+	jsonMsg(w, code, response)
+}
+
+func jsonMsg(w http.ResponseWriter, code int, response []byte) {
+	
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	w.Write(response)
 }
