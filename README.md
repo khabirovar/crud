@@ -34,3 +34,8 @@ For run application use docker compose:
 docker-compose up -d
 ```
 
+For stop and remove application from computer:
+```shell
+docker-compose down -v
+```
+
