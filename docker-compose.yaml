@@ -3,13 +3,18 @@ services:
   crud:
     build: .
     environment:
-      DB_HOST: "localhost"
+      DB_HOST: "db"
       DB_PORT: "5432"
       DB_NAME: "db_crud"
       DB_USER: "usr_crud"
       DB_PASS: "Passw0rd"
     ports:
       - "8080:8080"
+    networks:
+      - network
+    depends_on:
+      db:
+        condition: service_healthy
   db:
     image: postgres
     container_name: local_pgdb
@@ -22,6 +27,13 @@ services:
     volumes:
       - local_pgdata:/var/lib/postgresql/data
       - ./init-db/:/docker-entrypoint-initdb.d/
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d mydatabase -U myuser"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - network
   pgadmin:
     image: dpage/pgadmin4
     container_name: pgadmin4_container
@@ -33,7 +45,12 @@ services:
       PGADMIN_DEFAULT_PASSWORD: Passw0rd
     volumes:
       - pgadmin-data:/var/lib/pgadmin
+    networks:
+      - network
 
 volumes:
   local_pgdata:
   pgadmin-data:
+
+networks:
+  network:
