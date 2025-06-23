@@ -1,5 +1,15 @@
 version: "3.8"
 services:
+  crud:
+    build: .
+    environment:
+      DB_HOST: "localhost"
+      DB_PORT: "5432"
+      DB_NAME: "db_crud"
+      DB_USER: "usr_crud"
+      DB_PASS: "Passw0rd"
+    ports:
+      - "8080:8080"
   db:
     image: postgres
     container_name: local_pgdb
@@ -11,6 +21,7 @@ services:
       POSTGRES_PASSWORD: Passw0rd
     volumes:
       - local_pgdata:/var/lib/postgresql/data
+      - ./init-db/:/docker-entrypoint-initdb.d/
   pgadmin:
     image: dpage/pgadmin4
     container_name: pgadmin4_container
