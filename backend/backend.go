@@ -23,22 +23,29 @@ func NewBackend(dsn, port string) (*Backend, error) {
 }
 
 func (b *Backend) Run() {
-	http.HandleFunc("/books", b.handleBooks)
-	http.HandleFunc("/books/", b.handleBooks)
+	http.HandleFunc("/books", loggingMiddleware(b.handleBooks))
+	http.HandleFunc("/books/", loggingMiddleware(b.handleBooks))
 
 	if err := http.ListenAndServe(b.port, nil); err != nil {
 		log.Fatal(err)
 	}
 }
 
+func loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("[%s] %s - %s\n", r.Method,r.RemoteAddr, r.URL)
+		next(w, r)
+	}
+}
+
 func (b *Backend) handleBooks(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("METHOD: %v", r.Method)
 	switch r.Method {
 	case http.MethodGet:
 		if len(strings.TrimPrefix(r.URL.Path, "/books")) > 1 {
 			b.getBookByID(w, r)
+		} else {
+			b.getBooks(w, r)
 		}
-		b.getBooks(w, r)
 	case http.MethodPost:
 		b.addBook(w, r)
 	case http.MethodPatch:
@@ -137,15 +144,12 @@ func (b *Backend) updateBook(w http.ResponseWriter, r *http.Request) {
 }
 
 func (b *Backend) deleteBook(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("HIER")
 	idStr := strings.TrimPrefix(r.URL.Path, "/books/")
-	fmt.Printf("id %s", idStr)
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		errorMsg(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	fmt.Printf("id = %d\n", id)
 
 	err = b.db.DeleteBookByID(id)
 	if err != nil {
@@ -165,7 +169,6 @@ func errorMsg(w http.ResponseWriter, code int, message string) {
 }
 
 func jsonMsg(w http.ResponseWriter, code int, response []byte) {
-	
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
