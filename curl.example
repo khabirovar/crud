@@ -1,0 +1,14 @@
+# Create 
+curl -X POST http://localhost:8080/books --data '{"title":"title1", "author":"author1", "rating":5}'
+
+# Update
+curl -X PATCH http://localhost:8080/books --data '{"id": 1,"title":"title1", "author":"author1", "rating":2}'
+
+# Get by ID
+curl -X GET http://localhost:8080/books/1
+
+# Get list 
+curl -X GET http://localhost:8080/books
+
+# Delete by ID
+curl -X DELETE http://localhost:8080/books/1 
